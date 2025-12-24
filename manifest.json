@@ -1,0 +1,15 @@
+{
+  "name": "Attendance Predictor Pro",
+  "short_name": "Attendance",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#050510",
+  "theme_color": "#00f2ff",
+  "icons": [
+    {
+      "src": "graduation-cap.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

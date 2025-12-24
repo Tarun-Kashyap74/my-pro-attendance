@@ -1,0 +1,888 @@
+:root {
+  /* Enhanced Dark Theme */
+  --primary: #4a90e2; /* Soft Blue */
+  --accent: #9b59b6; /* Soft Purple */
+  --danger: #e74c3c; /* Soft Red */
+  --danger-rgb: 231, 76, 60;
+  --danger-dark: #c0392b;
+  --success: #27ae60; /* Soft Green */
+  --btn-contrast: #ffffff; /* White text on buttons */
+  --success-text: #ffffff;
+
+  /* neutrals for pure dark background */
+  --muted: #bdc3c7;
+  --bg: #000000; /* Pure black base */
+  --card: rgba(20, 20, 20, 0.9); /* Darker semi-transparent gray */
+  --text-main: #ffffff; /* Pure white text */
+  --glass-border: rgba(255, 255, 255, 0.3);
+}
+
+/* Layout */
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+body {
+  font-family: "Plus Jakarta Sans", Inter, system-ui, Arial;
+  background: var(--bg);
+  background-attachment: fixed;
+  color: var(--text-main);
+  padding: 18px;
+}
+
+.app-container {
+  display: grid;
+  grid-template-columns: 320px 1fr 300px;
+  gap: 30px;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  min-height: calc(100vh - 36px);
+}
+.main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 30px;
+}
+
+/* Cards & Glass */
+.card {
+  background: var(--card);
+  padding: 20px;
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+}
+.glass {
+  backdrop-filter: blur(6px);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.1),
+    rgba(255, 255, 255, 0.05)
+  );
+  border-radius: 12px;
+  border: 1px solid var(--glass-border);
+}
+[data-theme="light"] .glass {
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.02));
+}
+
+/* Header & Badges */
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.badge {
+  font-size: 0.85rem;
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, var(--accent), #b700ff);
+  color: #ffffff;
+  display: inline-block;
+}
+.next-class-box h2 {
+  margin: 6px 0;
+}
+
+/* Slider */
+.big-slider {
+  width: 100%;
+}
+.big-slider input[type="range"] {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  appearance: none;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+}
+.big-slider input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  border: 3px solid var(--accent);
+}
+
+/* Subjects */
+.subjects-container {
+  display: flex;
+  flex-direction: column;
+}
+.subject-scroll-box {
+  overflow: auto;
+  max-height: calc(100vh - 340px);
+  padding-right: 6px;
+}
+
+/* Subjects panel */
+.subjects-panel {
+  border-radius: 10px;
+  padding: 8px;
+  background: linear-gradient(
+    180deg,
+    rgba(74, 144, 226, 0.05),
+    rgba(74, 144, 226, 0.02)
+  );
+  border: 1px solid rgba(74, 144, 226, 0.1);
+}
+
+/* Scrollbar (WebKit) */
+.subject-scroll-box::-webkit-scrollbar {
+  width: 10px;
+}
+.subject-scroll-box::-webkit-scrollbar-track {
+  background: transparent;
+}
+.subject-scroll-box::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--primary), var(--accent));
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+}
+
+/* Firefox scrollbar */
+.subject-scroll-box {
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary) transparent;
+}
+.subject-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--text-main);
+  margin-bottom: 14px; /* increased gap between items */
+  border: 1px solid var(--glass-border);
+}
+/* .subject-item .title removed (not used in markup) */
+
+.add-btn {
+  background: linear-gradient(90deg, var(--success), var(--primary));
+  color: var(--btn-contrast);
+  font-weight: 700;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.edit-btn-ui,
+.del-btn-ui {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+  background: transparent;
+  color: var(--text-main);
+  cursor: pointer;
+}
+.edit-btn-ui:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+.del-btn-ui {
+  color: var(--danger);
+}
+.del-btn-ui:hover {
+  background: rgba(156, 3, 60, 0.08);
+  color: #fff;
+}
+.del-btn-ui:hover {
+  /* duplicate hover removed */
+}
+
+.btn-p {
+  background: var(--success);
+  color: var(--success-text);
+  font-weight: 700;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+.btn-a {
+  background: var(--danger);
+  color: var(--btn-contrast);
+  font-weight: 700;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+}
+
+/* Form inputs */
+.styled-input,
+select,
+input[type="time"],
+input[type="text"],
+input[type="number"] {
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid var(--glass-border);
+  background: rgba(0, 0, 0, 0.6);
+  color: var(--text-main);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+[data-theme="light"] .styled-input,
+[data-theme="light"] select,
+[data-theme="light"] input[type="time"],
+[data-theme="light"] input[type="text"],
+[data-theme="light"] input[type="number"] {
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--text-main);
+}
+.styled-input:focus,
+select:focus,
+input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 10px rgba(74, 144, 226, 0.2);
+}
+select {
+  appearance: none;
+  padding-right: 36px;
+  background-image: none;
+}
+
+.schedule-list {
+  max-height: calc(100vh - 340px);
+  overflow: auto;
+}
+.edit-main-btn {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px solid var(--glass-border);
+  background: var(--primary);
+  color: var(--btn-contrast);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Make the main Edit Timetable button prominent on dark theme */
+.edit-main-btn.primary {
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  color: var(--btn-contrast);
+  border: none;
+}
+.edit-main-btn.primary:hover {
+  filter: brightness(0.98);
+}
+
+/* Stats */
+.main-perc {
+  font-size: 2.8rem;
+  font-weight: 800;
+  text-align: center;
+  color: var(--primary);
+}
+.stats-footer {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 8px;
+}
+.s-box {
+  background: rgba(0, 0, 0, 0.03);
+  padding: 10px 14px;
+  border-radius: 10px;
+  min-width: 90px;
+  text-align: center;
+}
+.s-box span {
+  display: block;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.s-box b {
+  display: block;
+  font-weight: 800;
+  font-size: 1.2rem;
+}
+
+/* Calendar */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+}
+.calendar-day {
+  padding: 8px;
+  text-align: center;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+}
+.current-day {
+  background: var(--primary);
+  color: var(--btn-contrast);
+  font-weight: 700;
+}
+
+/* Side panel spacing: increase gap between calendar and tracker */
+.side-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* Make the clock more prominent and visible */
+#monthYear {
+  font-weight: 800;
+  color: var(--primary);
+  text-align: center;
+  margin-bottom: 6px;
+}
+#liveClock {
+  font-size: 2.4rem;
+  font-weight: 900;
+  text-align: center;
+  margin-top: 6px;
+  color: var(--accent);
+}
+
+/* Modals */
+.modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.7);
+  z-index: 1000;
+}
+.modal-content {
+  background: var(--card);
+  padding: 18px;
+  border-radius: 12px;
+  max-height: 80vh;
+  overflow: auto;
+  color: var(--text-main);
+}
+
+/* Timetable Modal */
+.timetable-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-x: hidden;
+  max-height: calc(90vh);
+}
+
+/* Ensure table rows can shrink to container width */
+.tt-table {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.tt-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  padding: 10px;
+  border-radius: 8px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.02),
+    rgba(255, 255, 255, 0.01)
+  );
+  border: 1px solid var(--glass-border);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.45);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.tt-row > div {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.tt-row .time {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+.tt-row .sub {
+  font-size: 0.95rem;
+  color: var(--text-main);
+}
+
+/* prevent modal buttons or hints from causing overflow */
+.modal-row {
+  flex-wrap: wrap;
+}
+.modal-btns {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  margin-top: 12px;
+}
+.save {
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  color: var(--btn-contrast);
+  font-weight: 700;
+  border: none;
+  padding: 10px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+.cancel {
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  color: var(--muted);
+  padding: 10px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+/* Timetable modal: make Save/Cancel use theme palette for clearer actions */
+.timetable-modal-content .save {
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  color: var(--btn-contrast);
+  border: none;
+}
+.timetable-modal-content .save:hover {
+  filter: brightness(0.95);
+}
+.timetable-modal-content .cancel {
+  background: var(--danger);
+  color: var(--btn-contrast);
+  font-weight: 700;
+  border: 1px solid rgba(var(--danger-rgb), 0.15);
+}
+.timetable-modal-content .cancel:hover {
+  filter: brightness(0.95);
+}
+
+.input-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.tt-edit-list {
+  margin-top: 12px;
+  max-height: 60vh;
+  overflow-y: scroll;
+  overflow-x: hidden;
+  padding-right: 14px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary) rgba(0, 0, 0, 0.04);
+  scrollbar-gutter: stable both-edges;
+  position: relative;
+  background-clip: padding-box;
+}
+.tt-edit-list::-webkit-scrollbar {
+  width: 12px;
+}
+.tt-edit-list::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.01);
+  border-radius: 10px;
+}
+.tt-edit-list::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--primary), var(--accent));
+  border-radius: 10px;
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  min-height: 36px;
+}
+.tt-edit-list::-webkit-scrollbar-thumb:hover {
+  filter: brightness(0.95);
+}
+.schedule-list {
+  max-height: calc(100vh - 340px);
+  overflow: auto;
+  padding-right: 6px;
+  /* match subjects scroll behavior */
+  scrollbar-width: thin;
+  scrollbar-color: var(--primary) transparent;
+}
+
+/* WebKit scrollbar for schedule (match subject scroll) */
+.schedule-list::-webkit-scrollbar {
+  width: 10px;
+}
+.schedule-list::-webkit-scrollbar-track {
+  background: transparent;
+}
+.schedule-list::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--primary), var(--accent));
+  border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+}
+
+/* Make each timetable row in Today's Schedule look like a subject-item card */
+.schedule-list .tt-table {
+  display: block;
+}
+.schedule-list .tt-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  border-radius: 10px;
+  background: var(--card);
+  color: var(--text-main);
+  margin-bottom: 14px;
+  border: 1px solid var(--glass-border);
+  box-shadow: none;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.schedule-list .tt-row .time {
+  color: var(--muted);
+  font-weight: 700;
+}
+.schedule-list .tt-row .sub {
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+/* Timetable container */
+.tt-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  border-radius: 10px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.05),
+    rgba(255, 255, 255, 0.02)
+  );
+  border: 1px solid var(--glass-border);
+  flex: 1 1 auto; /* allow container to grow inside modal */
+  min-height: 0; /* necessary for children to scroll inside flex */
+}
+[data-theme="light"] .tt-container {
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.05), rgba(0, 0, 0, 0.02));
+}
+.tt-container .styled-input,
+.tt-container select {
+  background: rgba(0, 0, 0, 0.4);
+  color: #fff;
+  border: 1px solid var(--glass-border);
+}
+[data-theme="light"] .tt-container .styled-input,
+[data-theme="light"] .tt-container select {
+  background: rgba(255, 255, 255, 0.8);
+  color: var(--text-main);
+}
+
+/* Subject stats */
+.subject-stats span {
+  display: inline-block;
+}
+
+/* Time inputs */
+.tt-time-inputs .tt-num {
+  width: 56px;
+  padding: 8px;
+  text-align: center;
+}
+.tt-time-inputs .tt-ampm {
+  width: 80px;
+  padding: 8px;
+}
+.tt-time-inputs .colon {
+  font-weight: 700;
+  color: var(--muted);
+}
+.tt-time-group label {
+  display: block;
+  margin-bottom: 4px;
+}
+
+/* Ongoing class highlight */
+.tt-row.ongoing {
+  border-color: var(--primary);
+  box-shadow: 0 0 15px rgba(74, 144, 226, 0.3);
+  background: linear-gradient(
+    180deg,
+    rgba(74, 144, 226, 0.15),
+    rgba(74, 144, 226, 0.05)
+  );
+}
+.tt-row.ongoing::before {
+  content: "";
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  bottom: 8px;
+  width: 4px;
+  background: var(--primary);
+  border-radius: 4px;
+}
+
+/* Responsive */
+
+/* Tablets (768px - 1024px) */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .app-container {
+    grid-template-columns: 250px 1fr 250px;
+    gap: 20px;
+    padding: 15px;
+  }
+  .side-panel {
+    gap: 20px;
+  }
+  .main-content {
+    gap: 20px;
+  }
+  .subject-scroll-box {
+    max-height: calc(100vh - 300px);
+  }
+  .schedule-list {
+    max-height: calc(100vh - 300px);
+  }
+  .card {
+    padding: 16px;
+  }
+  .modal-content {
+    width: 90%;
+    max-width: 600px;
+  }
+  .timetable-modal-content {
+    width: 95%;
+    max-width: 800px;
+  }
+}
+
+/* Phones (up to 768px) */
+@media (max-width: 768px) {
+  .app-container {
+    grid-template-columns: 1fr;
+    gap: 15px;
+    padding: 10px;
+  }
+  .side-panel {
+    gap: 15px;
+  }
+  .main-content {
+    gap: 15px;
+  }
+  .card {
+    padding: 14px;
+  }
+  .subject-scroll-box {
+    max-height: 40vh;
+  }
+  .schedule-list {
+    max-height: 40vh;
+  }
+  .main-perc {
+    font-size: 2.2rem;
+  }
+  #liveClock {
+    font-size: 2rem;
+  }
+  .subject-item {
+    padding: 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .subject-item > div:first-child {
+    max-width: 100%;
+  }
+  .subject-item > div:last-child {
+    width: 100%;
+    justify-content: space-around;
+  }
+  .btn-p,
+  .btn-a {
+    padding: 10px 14px;
+    font-size: 1rem;
+  }
+  .add-btn {
+    padding: 10px 16px;
+    font-size: 1rem;
+  }
+  .edit-main-btn {
+    padding: 12px;
+    font-size: 1rem;
+  }
+  .modal-content {
+    width: 95%;
+    max-width: 100%;
+    padding: 16px;
+    margin: 10px;
+  }
+  .timetable-modal-content {
+    width: 98%;
+    max-width: 100%;
+  }
+  .tt-container {
+    padding: 10px;
+  }
+  .styled-input,
+  select,
+  input[type="text"],
+  input[type="number"] {
+    padding: 12px;
+    font-size: 1rem;
+  }
+  .save,
+  .cancel {
+    padding: 12px 20px;
+    font-size: 1rem;
+  }
+  .tt-time-inputs .tt-num {
+    width: 60px;
+    padding: 10px;
+  }
+  .tt-time-inputs .tt-ampm {
+    width: 85px;
+    padding: 10px;
+  }
+  .tt-row {
+    padding: 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .tt-row > div:last-child {
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+  }
+  .schedule-list .tt-row {
+    padding: 12px;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  .schedule-list .tt-row > div {
+    width: 100%;
+  }
+  /* Fix timetable modal time inputs stacking vertically on mobile */
+  .tt-time-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .tt-time-group {
+    flex: none;
+    width: 100%;
+  }
+  /* Stabilize button layout by stacking hint below buttons */
+  .modal-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  #ttEditHint {
+    min-width: auto;
+    text-align: center;
+    margin-top: 8px;
+  }
+}
+
+/* Small phones (up to 480px) */
+@media (max-width: 480px) {
+  body {
+    padding: 8px;
+  }
+  .app-container {
+    gap: 10px;
+    padding: 8px;
+  }
+  .side-panel {
+    gap: 10px;
+  }
+  .main-content {
+    gap: 10px;
+  }
+  .card {
+    padding: 12px;
+  }
+  .subject-scroll-box {
+    max-height: 35vh;
+  }
+  .schedule-list {
+    max-height: 35vh;
+  }
+  .main-perc {
+    font-size: 2rem;
+  }
+  #liveClock {
+    font-size: 1.8rem;
+  }
+  .badge {
+    font-size: 0.8rem;
+    padding: 5px 8px;
+  }
+  .header-row h3 {
+    font-size: 1.1rem;
+  }
+  .subject-item {
+    padding: 10px;
+  }
+  .subject-stats {
+    font-size: 0.8rem;
+    gap: 8px;
+  }
+  .btn-p,
+  .btn-a {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
+  .add-btn {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+  }
+  .edit-main-btn {
+    padding: 10px;
+    font-size: 0.9rem;
+  }
+  .modal-content {
+    padding: 14px;
+    margin: 5px;
+  }
+  .modal-content h3 {
+    font-size: 1.2rem;
+  }
+  .styled-input,
+  select,
+  input[type="text"],
+  input[type="number"] {
+    padding: 10px;
+    font-size: 0.9rem;
+  }
+  .save,
+  .cancel {
+    padding: 10px 16px;
+    font-size: 0.9rem;
+  }
+  .tt-time-inputs .tt-num {
+    width: 55px;
+    padding: 8px;
+  }
+  .tt-time-inputs .tt-ampm {
+    width: 75px;
+    padding: 8px;
+  }
+  .tt-row {
+    padding: 10px;
+  }
+  .schedule-list .tt-row {
+    padding: 10px;
+  }
+  .stats-footer {
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+  }
+  .s-box {
+    min-width: 120px;
+  }
+}
+
+.input-group input {
+  width: 80px;
+  margin-bottom: 0;
+  text-align: center;
+}

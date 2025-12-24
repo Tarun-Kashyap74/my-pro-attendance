@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Attendance Predictor Pro</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#050510" />
+    <link rel="apple-touch-icon" href="graduation-cap.png" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="app-container">
+      <aside class="side-panel">
+        <div class="card glass calendar-section">
+          <div id="monthYear"></div>
+          <div class="calendar-grid" id="calendarGrid"></div>
+          <div id="liveClock">00:00:00 AM</div>
+        </div>
+
+        <div class="card glass tracker-section">
+          <h3>Attendance Tracker</h3>
+          <div class="slider-wrapper big-slider">
+            <div class="target-label">
+              Target: <span id="targetVal">75</span>
+            </div>
+            <input
+              type="range"
+              id="targetSlider"
+              aria-label="Target Attendance Percentage"
+              min="50"
+              max="100"
+              value="75"
+            />
+          </div>
+
+          <div class="stats-display">
+            <div class="main-perc"><span id="currPerc">0</span></div>
+            <div class="stats-footer">
+              <div class="s-box"><span>Total</span><b id="tClasses">0</b></div>
+              <div class="s-box">
+                <span>Present</span><b id="tPresent">0</b>
+              </div>
+              <div class="s-box"><span>Absent</span><b id="tAbsent">0</b></div>
+            </div>
+            <div
+              id="leaveInfo"
+              style="
+                margin-top: 10px;
+                text-align: center;
+                color: var(--muted);
+                font-size: 0.9rem;
+              "
+            ></div>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main-content">
+        <div class="card glass next-class-box">
+          <div class="badge">Next Lesson</div>
+          <h2 id="nextClassDetail">Loading...</h2>
+          <p id="nextClassTime">--:--</p>
+        </div>
+
+        <div class="card glass subjects-container">
+          <div class="header-row">
+            <h3>My Subjects</h3>
+            <button class="add-btn" onclick="openModal('subjectModal')">
+              Add Subject
+            </button>
+          </div>
+          <div class="subjects-panel">
+            <div class="subject-scroll-box" id="subjectList"></div>
+          </div>
+        </div>
+      </main>
+
+      <aside class="side-panel">
+        <div class="card glass timetable-card">
+          <h3>Today's Schedule</h3>
+          <div
+            id="todayDay"
+            style="color: var(--muted); margin-top: 6px; font-size: 0.95rem"
+          ></div>
+          <div id="todaySchedule" class="schedule-list"></div>
+          <button class="edit-main-btn" onclick="openTimetableModal()">
+            Edit Timetable
+          </button>
+        </div>
+      </aside>
+    </div>
+
+    <div id="subjectModal" class="modal">
+      <div
+        class="modal-content glass"
+        style="width: 720px; max-width: 96%; max-height: 90vh; overflow: auto"
+      >
+        <h3>New Subject</h3>
+        <input
+          type="text"
+          id="subjectNameInput"
+          placeholder="Subject Name..."
+          class="styled-input"
+        />
+        <div class="modal-btns">
+          <button onclick="closeModal('subjectModal')" class="cancel">
+            Cancel
+          </button>
+          <button onclick="confirmAddSubject()" class="save">Add</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="editAttendanceModal" class="modal">
+      <div class="modal-content glass">
+        <h3>Edit Attendance</h3>
+        <p
+          id="editSubName"
+          style="color: var(--primary); font-weight: 600; margin-bottom: 15px"
+        ></p>
+        <div class="input-group">
+          <label for="manualPresent">Present Classes:</label>
+          <input type="number" id="manualPresent" min="0" />
+        </div>
+        <div class="input-group">
+          <label for="manualTotal">Total Classes:</label>
+          <input type="number" id="manualTotal" min="0" />
+        </div>
+        <div class="modal-btns">
+          <button onclick="closeModal('editAttendanceModal')" class="cancel">
+            Close
+          </button>
+          <button onclick="saveManualAttendance()" class="save">Update</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="deleteConfirmationModal" class="modal">
+      <div class="modal-content glass">
+        <h3>Confirm Deletion</h3>
+        <p
+          id="deleteSubjectName"
+          style="color: var(--text-main); margin-bottom: 20px"
+        ></p>
+        <div class="modal-btns">
+          <button
+            onclick="closeModal('deleteConfirmationModal')"
+            class="cancel"
+          >
+            Cancel
+          </button>
+          <button onclick="confirmDeleteSubject()" class="save">Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="timetableModal" class="modal">
+      <div
+        class="modal-content glass timetable-modal-content"
+        style="width: 880px; max-width: 98%"
+      >
+        <h3>Edit Timetable</h3>
+        <div class="tt-container">
+          <select id="ttDaySelect">
+            <option value="1">Monday</option>
+            <option value="2">Tuesday</option>
+            <option value="3">Wednesday</option>
+            <option value="4">Thursday</option>
+            <option value="5">Friday</option>
+            <option value="6">Saturday</option>
+            <option value="0">Sunday</option>
+          </select>
+          <input
+            type="text"
+            id="ttSubInput"
+            placeholder="Subject Name"
+            class="styled-input"
+          />
+          <div
+            class="tt-time-row"
+            style="display: flex; gap: 12px; align-items: flex-start"
+          >
+            <div class="tt-time-group" style="flex: 1">
+              <label
+                style="
+                  font-size: 0.85rem;
+                  color: var(--muted);
+                  margin-bottom: 6px;
+                  display: block;
+                "
+                >From</label
+              >
+              <div
+                class="tt-time-inputs"
+                style="display: flex; gap: 8px; align-items: center"
+              >
+                <input
+                  type="number"
+                  id="ttFromHour"
+                  class="styled-input tt-num"
+                  min="1"
+                  max="12"
+                  placeholder="HH"
+                />
+                <span class="colon">:</span>
+                <input
+                  type="number"
+                  id="ttFromMin"
+                  class="styled-input tt-num"
+                  min="0"
+                  max="59"
+                  placeholder="MM"
+                />
+                <select id="ttFromAMPM" class="styled-input tt-ampm">
+                  <option>AM</option>
+                  <option>PM</option>
+                </select>
+              </div>
+            </div>
+            <div class="tt-time-group" style="flex: 1">
+              <label
+                style="
+                  font-size: 0.85rem;
+                  color: var(--muted);
+                  margin-bottom: 6px;
+                  display: block;
+                "
+                >To</label
+              >
+              <div
+                class="tt-time-inputs"
+                style="display: flex; gap: 8px; align-items: center"
+              >
+                <input
+                  type="number"
+                  id="ttToHour"
+                  class="styled-input tt-num"
+                  min="1"
+                  max="12"
+                  placeholder="HH"
+                />
+                <span class="colon">:</span>
+                <input
+                  type="number"
+                  id="ttToMin"
+                  class="styled-input tt-num"
+                  min="0"
+                  max="59"
+                  placeholder="MM"
+                />
+                <select id="ttToAMPM" class="styled-input tt-ampm">
+                  <option>AM</option>
+                  <option>PM</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div
+            class="modal-row"
+            style="
+              display: flex;
+              gap: 10px;
+              align-items: center;
+              margin-top: 10px;
+            "
+          >
+            <div style="flex: 1" class="modal-btns">
+              <button onclick="closeModal('timetableModal')" class="cancel">
+                Close
+              </button>
+              <button id="ttAddBtn" onclick="addTimetableEntry()" class="save">
+                Add Class
+              </button>
+            </div>
+            <div
+              style="min-width: 240px; text-align: right"
+              id="ttEditHint"
+              aria-hidden="true"
+            ></div>
+          </div>
+
+          <div id="modalTTList" class="tt-edit-list"></div>
+        </div>
+        <!-- end .tt-container -->
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+          .register("sw.js")
+          .then(() => console.log("Service Worker Registered"));
+      }
+    </script>
+  </body>
+</html>
