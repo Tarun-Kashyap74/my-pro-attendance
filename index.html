@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Attendance Pro</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#6c5ce7" />
+    <link rel="apple-touch-icon" href="graduation-cap.png" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+  <body>
+    
+    <header class="app-header">
+      <h1 id="pageTitle">Home</h1>
+      <div id="liveClock" class="header-clock">00:00</div>
+    </header>
+
+    <div class="app-container">
+      
+      <section id="tab-home" class="tab-content active">
+        <div class="card next-class-box">
+          <div class="badge">Up Next</div>
+          <h2 id="nextClassDetail">Relax!</h2>
+          <p id="nextClassTime">No classes right now</p>
+        </div>
+
+        <div class="section-title">
+          <h3>Today's Schedule</h3>
+          <span id="todayDay" class="subtitle-text">Checking...</span>
+        </div>
+
+        <div class="card timetable-card">
+          <div id="todaySchedule" class="schedule-list"></div>
+          <button class="edit-main-btn" onclick="openTimetableModal()">
+            <i class='bx bx-edit-alt'></i> Edit Timetable
+          </button>
+        </div>
+      </section>
+
+      <section id="tab-subjects" class="tab-content">
+        <div class="header-row">
+          <h3>My Subjects</h3>
+          <button class="add-btn" onclick="openModal('subjectModal')">
+            <i class='bx bx-plus'></i> New
+          </button>
+        </div>
+        <div class="subject-scroll-box" id="subjectList"></div>
+      </section>
+
+      <section id="tab-stats" class="tab-content">
+        <div class="card tracker-card">
+          <div class="slider-header">
+            <span>Target Goal</span>
+            <span id="targetVal" class="highlight-text">75%</span>
+          </div>
+          <input
+              type="range"
+              id="targetSlider"
+              class="range-slider"
+              min="50"
+              max="100"
+              value="75"
+            />
+          
+          <div class="stats-circle-container">
+            <div class="main-perc"><span id="currPerc">0%</span></div>
+            <p id="leaveInfo">Calculating...</p>
+          </div>
+
+          <div class="stats-grid">
+            <div class="s-box"><span>Total</span><b id="tClasses">0</b></div>
+            <div class="s-box"><span>Present</span><b id="tPresent">0</b></div>
+            <div class="s-box"><span>Absent</span><b id="tAbsent">0</b></div>
+          </div>
+        </div>
+
+        <div class="card calendar-card" style="margin-top: 20px;">
+          <div id="monthYear">Month</div>
+          <div class="calendar-grid" id="calendarGrid"></div>
+        </div>
+        
+        <button onclick="openModal('settingsModal')" class="settings-full-btn">
+          <i class='bx bx-cog'></i> App Settings
+        </button>
+      </section>
+
+    </div>
+
+    <nav class="bottom-nav">
+      <div class="nav-item active" onclick="switchTab('home')">
+        <i class='bx bx-home-alt-2'></i>
+        <span>Home</span>
+      </div>
+      <div class="nav-item" onclick="switchTab('subjects')">
+        <i class='bx bx-book-bookmark'></i>
+        <span>Subjects</span>
+      </div>
+      <div class="nav-item" onclick="switchTab('stats')">
+        <i class='bx bx-pie-chart-alt-2'></i>
+        <span>Stats</span>
+      </div>
+    </nav>
+
+    <div id="subjectModal" class="modal">
+      <div class="modal-content">
+        <h3>New Subject</h3>
+        <input type="text" id="subjectNameInput" placeholder="Subject Name (e.g. Math)" class="styled-input" />
+        <div class="modal-btns">
+          <button onclick="closeModal('subjectModal')" class="cancel">Cancel</button>
+          <button onclick="confirmAddSubject()" class="save">Add</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="editAttendanceModal" class="modal">
+      <div class="modal-content">
+        <h3>Edit Attendance</h3>
+        <p id="editSubName" class="modal-subtitle"></p>
+        <div class="input-row">
+           <label style="font-weight:700; color:var(--muted); font-size:0.9rem">Present Classes</label>
+           <input type="number" id="manualPresent" min="0" class="styled-input" />
+        </div>
+        <div class="input-row" style="margin-top:10px">
+           <label style="font-weight:700; color:var(--muted); font-size:0.9rem">Total Classes</label>
+           <input type="number" id="manualTotal" min="0" class="styled-input" />
+        </div>
+        <div class="modal-btns">
+          <button onclick="closeModal('editAttendanceModal')" class="cancel">Cancel</button>
+          <button onclick="saveManualAttendance()" class="save">Update</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="taskModal" class="modal">
+      <div class="modal-content">
+        <h3 id="taskModalTitle">Tasks</h3>
+        <div class="task-input-area">
+           <input type="text" id="newTaskInput" placeholder="New Task..." class="styled-input">
+           <button onclick="addNewTask()" class="icon-btn-add"><i class='bx bx-plus'></i></button>
+        </div>
+        <div id="taskList" class="task-list-container"></div>
+        <div class="modal-btns">
+          <button onclick="closeModal('taskModal')" class="cancel full-width">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="smartPopup" class="modal">
+      <div class="modal-content centered-text">
+        <h3>Class Ended?</h3>
+        <p id="smartPopupText">Did you attend?</p>
+        <div class="modal-btns centered-btns">
+          <button onclick="handleSmartAction(false)" class="cancel red-btn">Absent</button>
+          <button onclick="handleSmartAction(true)" class="save green-btn">Present</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="settingsModal" class="modal">
+      <div class="modal-content">
+        <h3>App Appearance</h3>
+        
+        <div class="setting-row-item">
+           <div class="setting-text">
+             <span class="setting-title">Dark Mode</span>
+             <span class="setting-desc">Switch to dark theme</span>
+           </div>
+           <label class="switch">
+              <input type="checkbox" id="darkModeToggle" onchange="toggleDarkMode()">
+              <span class="slider round"></span>
+           </label>
+        </div>
+
+        <hr class="divider">
+
+        <div class="setting-row-item vertical">
+           <span class="setting-title">Accent Color</span>
+           <div class="theme-options">
+              <div class="theme-dot" style="background:#6c5ce7" onclick="setTheme('#6c5ce7', '#a29bfe')"></div>
+              <div class="theme-dot" style="background:#0984e3" onclick="setTheme('#0984e3', '#74b9ff')"></div>
+              <div class="theme-dot" style="background:#e17055" onclick="setTheme('#e17055', '#fab1a0')"></div>
+              <div class="theme-dot" style="background:#00b894" onclick="setTheme('#00b894', '#55efc4')"></div>
+              <div class="theme-dot" style="background:#e84393" onclick="setTheme('#e84393', '#fd79a8')"></div>
+              <div class="theme-dot" style="background:#2d3436" onclick="setTheme('#2d3436', '#636e72')"></div>
+           </div>
+        </div>
+
+        <hr class="divider">
+
+        <button onclick="exportData()" class="backup-btn">
+          <i class='bx bx-cloud-download'></i> Backup Data (JSON)
+        </button>
+
+        <div class="modal-btns">
+          <button onclick="closeModal('settingsModal')" class="cancel full-width">Close</button>
+        </div>
+      </div>
+    </div>
+    
+    <div id="deleteConfirmationModal" class="modal">
+      <div class="modal-content">
+        <h3>Delete?</h3>
+        <p id="deleteSubjectName"></p>
+        <div class="modal-btns">
+          <button onclick="closeModal('deleteConfirmationModal')" class="cancel">No</button>
+          <button onclick="confirmDeleteSubject()" class="save red-btn">Yes, Delete</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="timetableModal" class="modal full-screen-modal">
+      <div class="modal-content full-height">
+        
+        <div class="modal-header">
+           <h3>Edit Timetable</h3>
+           <button onclick="closeModal('timetableModal')" class="close-icon-btn">
+             <i class='bx bx-x'></i>
+           </button>
+        </div>
+        
+        <div class="tt-form-card">
+          <label class="input-label">Select Day</label>
+          <div class="day-selector-wrapper">
+            <select id="ttDaySelect" class="styled-input-clean">
+              <option value="1">Monday</option>
+              <option value="2">Tuesday</option>
+              <option value="3">Wednesday</option>
+              <option value="4">Thursday</option>
+              <option value="5">Friday</option>
+              <option value="6">Saturday</option>
+              <option value="0">Sunday</option>
+            </select>
+            <i class='bx bx-chevron-down drop-icon'></i>
+          </div>
+
+          <label class="input-label">Subject</label>
+          <input type="text" id="ttSubInput" placeholder="e.g. Mathematics" class="styled-input-clean" />
+          
+          <div class="time-row-setup">
+            <div class="time-box">
+               <label class="input-label">Start</label>
+               <div class="time-inner">
+                  <input type="number" id="ttFromHour" placeholder="10" class="time-field">
+                  <span class="colon">:</span>
+                  <input type="number" id="ttFromMin" placeholder="00" class="time-field">
+                  <select id="ttFromAMPM" class="ampm-field"><option>AM</option><option>PM</option></select>
+               </div>
+            </div>
+            
+            <i class='bx bx-right-arrow-alt arrow-icon'></i>
+
+            <div class="time-box">
+               <label class="input-label">End</label>
+               <div class="time-inner">
+                  <input type="number" id="ttToHour" placeholder="11" class="time-field">
+                  <span class="colon">:</span>
+                  <input type="number" id="ttToMin" placeholder="00" class="time-field">
+                  <select id="ttToAMPM" class="ampm-field"><option>AM</option><option>PM</option></select>
+               </div>
+            </div>
+          </div>
+          
+          <button id="ttAddBtn" onclick="addTimetableEntry()" class="add-class-btn">
+            <i class='bx bx-plus-circle'></i> Add Class
+          </button>
+          <div id="ttEditHint" class="hint-text"></div>
+        </div>
+
+        <div class="list-header-row">
+          <span>Schedule for Selected Day</span>
+          <span class="count-badge" id="classCount">0</span>
+        </div>
+
+        <div id="modalTTList" class="tt-list-scroll"></div>
+      </div>
+    </div>
+
+    <script src="script.js"></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.register("sw.js");
+      }
+    </script>
+  </body>
+</html>
