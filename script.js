@@ -1,127 +1,162 @@
+// --- INITIALIZATION ---
 let subjects = JSON.parse(localStorage.getItem("subjects")) || [];
 let timetable = JSON.parse(localStorage.getItem("timetable")) || [];
+let appSettings = JSON.parse(localStorage.getItem("appSettings")) || {
+  themePrimary: "#6c5ce7",
+  themeAccent: "#a29bfe",
+  darkMode: false,
+};
+
+subjects.forEach((s) => {
+  if (!s.history) s.history = [];
+  if (!s.tasks) s.tasks = [];
+});
+
+applyTheme(
+  appSettings.themePrimary,
+  appSettings.themeAccent,
+  appSettings.darkMode,
+);
+
 let currentEditIdx = null;
 let editingTTIndex = null;
-
-const targetSlider = document.getElementById("targetSlider");
-const targetVal = document.getElementById("targetVal");
-
-// show percent sign on load
-if (targetVal && targetSlider) targetVal.innerText = targetSlider.value + "%";
-
-// Helpers: convert HH:MM <-> minutes and format 12-hour with AM/PM
-function timeToMinutes(t) {
-  const [hh, mm] = (t || "").split(":").map(Number);
-  if (isNaN(hh) || isNaN(mm)) return 0;
-  return hh * 60 + mm;
-}
-
-function formatTime12(t) {
-  const [hhRaw, mmRaw] = (t || "").split(":").map(Number);
-  if (isNaN(hhRaw) || isNaN(mmRaw)) return t || "";
-  const ampm = hhRaw >= 12 ? "PM" : "AM";
-  const hh = hhRaw % 12 || 12;
-  return `${hh}:${String(mmRaw).padStart(2, "0")} ${ampm}`;
-}
-
+let currentTaskSubIdx = null;
+let smartPopupData = null;
 let _lastDateStamp = new Date().toDateString();
 
+// --- THEME ---
+function toggleDarkMode() {
+  const isDark = document.getElementById("darkModeToggle").checked;
+  appSettings.darkMode = isDark;
+  if (isDark) {
+    document.documentElement.setAttribute("data-theme", "dark");
+  } else {
+    document.documentElement.removeAttribute("data-theme");
+  }
+  saveData();
+}
+
+function setTheme(primary, accent) {
+  appSettings.themePrimary = primary;
+  appSettings.themeAccent = accent;
+  applyTheme(primary, accent, appSettings.darkMode);
+  saveData();
+}
+
+function applyTheme(p, a, isDark) {
+  document.documentElement.style.setProperty("--primary", p);
+  const toggleBtn = document.getElementById("darkModeToggle");
+  if (isDark) {
+    document.documentElement.setAttribute("data-theme", "dark");
+    if (toggleBtn) toggleBtn.checked = true;
+  } else {
+    document.documentElement.removeAttribute("data-theme");
+    if (toggleBtn) toggleBtn.checked = false;
+  }
+}
+
+// --- TABS ---
+function switchTab(tabId) {
+  document
+    .querySelectorAll(".tab-content")
+    .forEach((el) => el.classList.remove("active"));
+  document.getElementById("tab-" + tabId).classList.add("active");
+  const navs = document.querySelectorAll(".nav-item");
+  navs.forEach((n) => n.classList.remove("active"));
+  if (tabId === "home") navs[0].classList.add("active");
+  if (tabId === "subjects") navs[1].classList.add("active");
+  if (tabId === "stats") navs[2].classList.add("active");
+  const titles = { home: "Home", subjects: "Subjects", stats: "Statistics" };
+  document.getElementById("pageTitle").innerText = titles[tabId];
+}
+
+// --- CLOCK ---
 function updateClock() {
   const now = new Date();
-  const nowH = now.getHours();
-  const mins = String(now.getMinutes()).padStart(2, "0");
   const secs = String(now.getSeconds()).padStart(2, "0");
-  const ampm = nowH >= 12 ? "PM" : "AM";
-  const hours12 = nowH % 12 || 12;
-  document.getElementById("liveClock").innerText = `${String(hours12).padStart(
-    2,
-    "0"
-  )}:${mins}:${secs} ${ampm}`;
+  document.getElementById("liveClock").innerText = now.toLocaleTimeString(
+    "en-US",
+    { hour: "numeric", minute: "2-digit", hour12: true },
+  );
 
-  // If date changed (crossed midnight or timezone change), refresh calendar and schedule immediately
   const todayStamp = now.toDateString();
   if (todayStamp !== _lastDateStamp) {
     _lastDateStamp = todayStamp;
     renderCalendar();
     renderTodaySchedule();
   }
-
-  // update schedule at every minute boundary (keep next-lesson live)
   if (secs === "00") renderTodaySchedule();
-
-  // refresh at fixed 5 AM exactly at HH:00:00 for any daily recalculations
-  const refreshHour = 5;
-  if (nowH === refreshHour && mins === "00" && secs === "00") {
-    renderTodaySchedule();
-    renderCalendar();
-    renderSubjects();
-  }
-
-  // refresh exactly at midnight (12:00 AM) so next-day sessions appear immediately
-  if (nowH === 0 && mins === "00" && secs === "00") {
-    // reset date stamp and force full refresh
-    _lastDateStamp = new Date().toDateString();
-    renderTodaySchedule();
-    renderCalendar();
-    renderSubjects();
-  }
 }
-
 setInterval(updateClock, 1000);
 
-function renderCalendar() {
-  const now = new Date();
-  document.getElementById("monthYear").innerText = `${now.toLocaleString(
-    "default",
-    { month: "long" }
-  )} ${now.getFullYear()}`;
-  const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  const grid = document.getElementById("calendarGrid");
-  grid.innerHTML = "";
-  for (let i = 1; i <= days; i++) {
-    const d = document.createElement("div");
-    d.className =
-      i === now.getDate() ? "calendar-day current-day" : "calendar-day";
-    d.innerText = i;
-    grid.appendChild(d);
+// --- RENDER ---
+function renderSubjects() {
+  const list = document.getElementById("subjectList");
+  if (subjects.length === 0) {
+    list.innerHTML = `<div style="text-align:center; padding:40px 20px; color:var(--muted)">
+      <i class='bx bx-book-open' style="font-size:3rem; margin-bottom:10px; display:block"></i>
+      <p>No subjects yet.</p>
+    </div>`;
+    return;
   }
-}
-
-function openModal(id) {
-  document.getElementById(id).style.display = "flex";
-}
-function closeModal(id) {
-  document.getElementById(id).style.display = "none";
+  list.innerHTML = subjects
+    .map((s, i) => {
+      const p = s.total > 0 ? ((s.present / s.total) * 100).toFixed(1) : "0.0";
+      const pendingTasks = s.tasks ? s.tasks.filter((t) => !t.done).length : 0;
+      return `
+      <div class="subject-item">
+        <div class="subject-info" onclick="openTaskModal(${i})">
+          <strong>${s.name} ${pendingTasks > 0 ? `<span style="font-size:0.7rem; background:var(--danger); color:white; padding:2px 6px; border-radius:10px">${pendingTasks}</span>` : ""}</strong>
+          <div class="subject-stats">
+            Attendance: <span style="color:${parseFloat(p) >= 75 ? "var(--success)" : "var(--danger)"}; font-weight:bold">${p}%</span> 
+            (${s.present}/${s.total})
+          </div>
+        </div>
+        <div class="subject-actions">
+          <button class="btn-icon btn-p" onclick="markAttendance(${i},true)"><i class='bx bx-check'></i></button>
+          <button class="btn-icon btn-a" onclick="markAttendance(${i},false)"><i class='bx bx-x'></i></button>
+          <button class="btn-icon btn-more" onclick="openEditAttendance(${i})"><i class='bx bx-dots-vertical-rounded'></i></button>
+          <button class="btn-icon btn-more" onclick="deleteSubject(${i})" style="color:var(--danger)"><i class='bx bx-trash'></i></button>
+        </div>
+      </div>`;
+    })
+    .join("");
 }
 
 function confirmAddSubject() {
   const input = document.getElementById("subjectNameInput");
-  if (!input) return;
   const name = (input.value || "").trim();
   if (!name) return;
-  subjects.push({ name: name, present: 0, total: 0 });
+  subjects.push({ name: name, present: 0, total: 0, history: [], tasks: [] });
   saveData();
   input.value = "";
   closeModal("subjectModal");
 }
 
-let subjectToDelete = null;
-
 function deleteSubject(idx) {
-  subjectToDelete = idx;
-  document.getElementById(
-    "deleteSubjectName"
-  ).innerText = `Are you sure you want to delete "${subjects[idx].name}"?`;
+  window.subjectToDelete = idx;
+  document.getElementById("deleteSubjectName").innerText =
+    `Delete "${subjects[idx].name}"?`;
   openModal("deleteConfirmationModal");
 }
 
 function confirmDeleteSubject() {
-  if (subjectToDelete !== null) {
-    subjects.splice(subjectToDelete, 1);
+  if (window.subjectToDelete !== undefined && window.subjectToDelete !== null) {
+    subjects.splice(window.subjectToDelete, 1);
     saveData();
-    subjectToDelete = null;
+    window.subjectToDelete = null;
   }
   closeModal("deleteConfirmationModal");
+}
+
+function markAttendance(idx, isPresent) {
+  subjects[idx].total++;
+  if (isPresent) subjects[idx].present++;
+  subjects[idx].history.push({
+    date: new Date().toISOString(),
+    status: isPresent ? "P" : "A",
+  });
+  saveData();
 }
 
 function openEditAttendance(idx) {
@@ -141,177 +176,64 @@ function saveManualAttendance() {
   closeModal("editAttendanceModal");
 }
 
-function markAttendance(idx, isPresent) {
-  subjects[idx].total++;
-  if (isPresent) subjects[idx].present++;
-  saveData();
+// --- TASKS ---
+function openTaskModal(idx) {
+  currentTaskSubIdx = idx;
+  document.getElementById("taskModalTitle").innerText =
+    `Tasks: ${subjects[idx].name}`;
+  renderTasks();
+  openModal("taskModal");
 }
 
-function saveData() {
-  localStorage.setItem("subjects", JSON.stringify(subjects));
-  renderSubjects();
-  updateStats();
-}
-
-function renderSubjects() {
-  const list = document.getElementById("subjectList");
-  list.innerHTML = subjects
-    .map((s, i) => {
-      const p = s.total > 0 ? ((s.present / s.total) * 100).toFixed(2) : "0.00";
-      return `
-      <div class="subject-item">
-        <div style="max-width:60%;">
-          <div style="font-weight:600; font-size:1rem; overflow:hidden; text-overflow:ellipsis;">${s.name}</div>
-          <div class="subject-stats" style="color:var(--muted); font-size:0.9rem; display:flex; gap:12px; align-items:center; margin-top:6px">
-            <span>Present <strong style="font-weight:700">${s.present}</strong></span>
-            <span>Total <strong style="font-weight:700">${s.total}</strong> Lectures</span>
-            <span>•</span>
-            <span>${p}%</span>
-          </div>
-        </div>
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span class="del-btn-ui" onclick="deleteSubject(${i})">Del</span>
-          <span class="edit-btn-ui" onclick="openEditAttendance(${i})">Edit</span>
-          <button class="btn-p" onclick="markAttendance(${i},true)">P</button>
-          <button class="btn-a" onclick="markAttendance(${i},false)">A</button>
-        </div>
-      </div>`;
-    })
+function renderTasks() {
+  const list = document.getElementById("taskList");
+  const tasks = subjects[currentTaskSubIdx].tasks;
+  if (!tasks || tasks.length === 0) {
+    list.innerHTML = `<p style="color:var(--muted); text-align:center; padding:20px;">No pending tasks.</p>`;
+    return;
+  }
+  list.innerHTML = tasks
+    .map(
+      (t, i) => `
+    <div class="task-item ${t.done ? "completed" : ""}" onclick="toggleTask(${i})">
+      <span>${t.done ? '<i class="bx bx-checkbox-checked"></i>' : '<i class="bx bx-checkbox"></i>'} &nbsp; ${t.text}</span>
+      <i class='bx bx-x' style="font-size:1.2rem; color:var(--muted)" onclick="deleteTask(event, ${i})"></i>
+    </div>
+  `,
+    )
     .join("");
 }
 
-// Build 24-hour HH:MM string from 12-hour inputs
-function build24(hhId, mmId, ampmId) {
-  const hhEl = document.getElementById(hhId);
-  const mmEl = document.getElementById(mmId);
-  const ampmEl = document.getElementById(ampmId);
-  if (!hhEl || !mmEl || !ampmEl) return "";
-  let hh = parseInt(hhEl.value, 10);
-  let mm = parseInt(mmEl.value, 10);
-  const ampm = (ampmEl.value || "AM").toUpperCase();
-  if (isNaN(hh) || isNaN(mm)) return "";
-  if (hh < 1) hh = 1;
-  if (hh > 12) hh = hh % 12;
-  if (mm < 0) mm = 0;
-  if (mm > 59) mm = mm % 60;
-  if (hh === 12 && ampm === "AM") hh = 0;
-  if (ampm === "PM" && hh !== 12) hh = hh + 12;
-  return `${String(hh).padStart(2, "0")}:${String(mm).padStart(2, "0")}`;
+function addNewTask() {
+  const input = document.getElementById("newTaskInput");
+  const val = input.value.trim();
+  if (!val) return;
+  subjects[currentTaskSubIdx].tasks.push({ text: val, done: false });
+  input.value = "";
+  saveData();
+  renderTasks();
+  renderSubjects();
 }
 
-function openTimetableModal() {
-  renderModalTT();
-  openModal("timetableModal");
-}
-function addTimetableEntry() {
-  const d = parseInt(document.getElementById("ttDaySelect").value, 10);
-  const s = document.getElementById("ttSubInput").value;
-  const f = build24("ttFromHour", "ttFromMin", "ttFromAMPM");
-  const t = build24("ttToHour", "ttToMin", "ttToAMPM");
-  if (s && f && t) {
-    if (editingTTIndex !== null && typeof editingTTIndex === "number") {
-      timetable[editingTTIndex] = { day: d, sub: s, from: f, to: t };
-      editingTTIndex = null;
-      const btn = document.getElementById("ttAddBtn");
-      if (btn) btn.innerText = "Add Class";
-      const hint = document.getElementById("ttEditHint");
-      if (hint) hint.innerText = "";
-    } else {
-      timetable.push({ day: d, sub: s, from: f, to: t });
-    }
-    localStorage.setItem("timetable", JSON.stringify(timetable));
-    renderModalTT();
-    renderTodaySchedule();
-    document.getElementById("ttSubInput").value = "";
-    document.getElementById("ttFromHour").value = "";
-    document.getElementById("ttFromMin").value = "";
-    document.getElementById("ttFromAMPM").value = "AM";
-    document.getElementById("ttToHour").value = "";
-    document.getElementById("ttToMin").value = "";
-    document.getElementById("ttToAMPM").value = "AM";
-    // keep the timetable modal open after adding/updating so user can add multiple entries
-    const subEl = document.getElementById("ttSubInput");
-    if (subEl) subEl.focus();
-  }
+function toggleTask(taskIdx) {
+  const t = subjects[currentTaskSubIdx].tasks[taskIdx];
+  t.done = !t.done;
+  saveData();
+  renderTasks();
+  renderSubjects();
 }
 
-function renderModalTT() {
-  const list = document.getElementById("modalTTList");
-  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  const sel = parseInt(document.getElementById("ttDaySelect").value, 10);
-  const entries = timetable
-    .map((item, i) => ({ ...item, _idx: i }))
-    .filter((it) => parseInt(it.day, 10) === sel)
-    .sort((a, b) => a.from.localeCompare(b.from));
-
-  if (entries.length === 0) {
-    list.innerHTML = `<p style="color:var(--muted); font-size:.9rem; text-align:center">No classes for ${days[sel]}.</p>`;
-    return;
-  }
-
-  list.innerHTML = `
-    <div class="tt-table">
-      ${entries
-        .map(
-          (it) => `
-        <div class="tt-row">
-          <div>
-            <div class="time">${formatTime12(it.from)} - ${formatTime12(
-            it.to
-          )}</div>
-            <div class="sub">${it.sub}</div>
-          </div>
-          <div>
-            <button class="edit-btn-ui" onclick="editTT(${
-              it._idx
-            })">Edit</button>
-            <button class="del-btn-ui" onclick="deleteTT(${
-              it._idx
-            })">Delete</button>
-          </div>
-        </div>`
-        )
-        .join("")}
-    </div>`;
+function deleteTask(e, taskIdx) {
+  e.stopPropagation();
+  subjects[currentTaskSubIdx].tasks.splice(taskIdx, 1);
+  saveData();
+  renderTasks();
+  renderSubjects();
 }
 
-// Populate timetable inputs for editing an entry
-function editTT(i) {
-  const entry = timetable[i];
-  if (!entry) return;
-  editingTTIndex = i;
-  document.getElementById("ttDaySelect").value = String(entry.day);
-  document.getElementById("ttSubInput").value = entry.sub;
-  // parse 24h HH:MM into 12h pieces
-  const [fh, fm] = entry.from.split(":").map(Number);
-  const [th, tm] = entry.to.split(":").map(Number);
-  const fAMP = fh >= 12 ? "PM" : "AM";
-  const tAMP = th >= 12 ? "PM" : "AM";
-  let fh12 = fh % 12 || 12;
-  let th12 = th % 12 || 12;
-  document.getElementById("ttFromHour").value = String(fh12);
-  document.getElementById("ttFromMin").value = String(fm).padStart(2, "0");
-  document.getElementById("ttFromAMPM").value = fAMP;
-  document.getElementById("ttToHour").value = String(th12);
-  document.getElementById("ttToMin").value = String(tm).padStart(2, "0");
-  document.getElementById("ttToAMPM").value = tAMP;
-  // change Add button to Update
-  const btn = document.getElementById("ttAddBtn");
-  if (btn) btn.innerText = "Update Class";
-  const hint = document.getElementById("ttEditHint");
-  if (hint) hint.innerText = "Editing entry — click Update to save";
-}
-
-function deleteTT(i) {
-  timetable.splice(i, 1);
-  localStorage.setItem("timetable", JSON.stringify(timetable));
-  renderModalTT();
-  renderTodaySchedule();
-}
-
+// --- TIMETABLE ---
 function renderTodaySchedule() {
-  const now = new Date();
-  const today = now.getDay();
+  const today = new Date().getDay();
   const daysFull = [
     "Sunday",
     "Monday",
@@ -321,76 +243,193 @@ function renderTodaySchedule() {
     "Friday",
     "Saturday",
   ];
-  const dayEl = document.getElementById("todayDay");
-  if (dayEl) dayEl.innerText = daysFull[today];
-  const scheduleList = document.getElementById("todaySchedule");
+  document.getElementById("todayDay").innerText = daysFull[today];
+
   const classes = timetable
     .filter((item) => parseInt(item.day, 10) === today)
     .sort((a, b) => a.from.localeCompare(b.from));
+  const scheduleList = document.getElementById("todaySchedule");
 
   if (classes.length === 0) {
     scheduleList.innerHTML =
-      '<p style="color:var(--muted); font-size:0.9rem; text-align:center;">No classes today.</p>';
-    document.getElementById("nextClassDetail").innerText = "Free Day!";
-    document.getElementById("nextClassTime").innerText = "Enjoy.";
+      '<p style="color:var(--muted); text-align:center; font-size:0.9rem; padding:10px;">No classes today.</p>';
+    document.getElementById("nextClassDetail").innerText = "Relax!";
+    document.getElementById("nextClassTime").innerText = "No classes";
     return;
   }
 
-  const nowM = now.getHours() * 60 + now.getMinutes();
-  // If current time falls within a class, mark it as ongoing and show next as "Ongoing"
+  const nowM = new Date().getHours() * 60 + new Date().getMinutes();
   const ongoing = classes.find(
-    (item) => timeToMinutes(item.from) <= nowM && timeToMinutes(item.to) > nowM
+    (item) => timeToMinutes(item.from) <= nowM && timeToMinutes(item.to) > nowM,
   );
   const upcoming = ongoing
     ? null
     : classes.find((item) => timeToMinutes(item.from) > nowM);
 
-  scheduleList.innerHTML = `
-    <div class="tt-table">
-      ${classes
-        .map((item) => {
-          const isO =
-            ongoing &&
-            item.from === ongoing.from &&
-            item.to === ongoing.to &&
-            item.sub === ongoing.sub;
-          return `
-        <div class="tt-row${isO ? " ongoing" : ""}">
-          <div>
-            <div class="time">${formatTime12(item.from)} - ${formatTime12(
-            item.to
-          )}</div>
-            <div class="sub" style="font-weight:600">${item.sub}</div>
-          </div>
-        </div>`;
-        })
-        .join("")}
+  scheduleList.innerHTML = classes
+    .map((item) => {
+      const isO = ongoing && item === ongoing;
+      return `<div class="tt-row${isO ? " ongoing" : ""}">
+       <div class="time">${formatTime12(item.from)} - ${formatTime12(item.to)}</div>
+       <div class="sub">${item.sub}</div>
     </div>`;
+    })
+    .join("");
 
   if (upcoming) {
     document.getElementById("nextClassDetail").innerText = upcoming.sub;
-    document.getElementById("nextClassTime").innerText = `${formatTime12(
-      upcoming.from
-    )} - ${formatTime12(upcoming.to)}`;
+    document.getElementById("nextClassTime").innerText =
+      `${formatTime12(upcoming.from)} - ${formatTime12(upcoming.to)}`;
+  } else if (ongoing) {
+    document.getElementById("nextClassDetail").innerText = ongoing.sub;
+    document.getElementById("nextClassTime").innerText = "Ongoing Now";
   } else {
-    if (ongoing) {
-      document.getElementById("nextClassDetail").innerText =
-        ongoing.sub + " (Ongoing)";
-      document.getElementById("nextClassTime").innerText = `${formatTime12(
-        ongoing.from
-      )} - ${formatTime12(ongoing.to)}`;
-    } else {
-      // No more classes today; show when next session will be updated (midnight)
-      document.getElementById("nextClassDetail").innerText =
-        "Next session will update at 12:00 AM";
-      document.getElementById("nextClassTime").innerText = "";
-    }
+    document.getElementById("nextClassDetail").innerText = "All Done";
+    document.getElementById("nextClassTime").innerText = "See you tomorrow";
   }
 }
 
-// ensure modal day selector updates modal list on change
-const ttSel = document.getElementById("ttDaySelect");
-if (ttSel) ttSel.addEventListener("change", renderModalTT);
+function openTimetableModal() {
+  renderModalTT();
+  openModal("timetableModal");
+}
+
+function addTimetableEntry() {
+  const d = parseInt(document.getElementById("ttDaySelect").value, 10);
+  const s = document.getElementById("ttSubInput").value;
+  const fH = document.getElementById("ttFromHour").value;
+  const fM = document.getElementById("ttFromMin").value;
+  const fAP = document.getElementById("ttFromAMPM").value;
+  const tH = document.getElementById("ttToHour").value;
+  const tM = document.getElementById("ttToMin").value;
+  const tAP = document.getElementById("ttToAMPM").value;
+
+  if (s && fH && tH) {
+    const to24 = (h, m, ap) => {
+      let hh = parseInt(h);
+      if (ap === "PM" && hh !== 12) hh += 12;
+      if (ap === "AM" && hh === 12) hh = 0;
+      return `${String(hh).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    };
+    const fromTime = to24(fH, fM, fAP);
+    const toTime = to24(tH, tM, tAP);
+
+    if (editingTTIndex !== null) {
+      timetable[editingTTIndex] = {
+        day: d,
+        sub: s,
+        from: fromTime,
+        to: toTime,
+      };
+      editingTTIndex = null;
+      document.getElementById("ttAddBtn").innerText = "Add Class";
+      document.getElementById("ttEditHint").innerText = "";
+    } else {
+      timetable.push({ day: d, sub: s, from: fromTime, to: toTime });
+    }
+    saveData();
+    renderModalTT();
+    renderTodaySchedule();
+    document.getElementById("ttSubInput").value = "";
+  }
+}
+
+function renderModalTT() {
+  const list = document.getElementById("modalTTList");
+  const sel = parseInt(document.getElementById("ttDaySelect").value, 10);
+  const entries = timetable
+    .map((item, i) => ({ ...item, _idx: i }))
+    .filter((it) => parseInt(it.day, 10) === sel)
+    .sort((a, b) => a.from.localeCompare(b.from));
+
+  const countEl = document.getElementById("classCount");
+  if (countEl) countEl.innerText = entries.length;
+
+  if (entries.length === 0) {
+    list.innerHTML = `
+      <div style="text-align:center; padding:40px; color:var(--muted); opacity:0.7">
+        <i class='bx bx-calendar-plus' style="font-size:3rem; margin-bottom:10px"></i>
+        <p>No classes for this day.</p>
+        <p style="font-size:0.8rem">Add one above!</p>
+      </div>`;
+    return;
+  }
+  list.innerHTML = entries
+    .map(
+      (it) => `
+    <div class="tt-item-card">
+      <div class="tt-info">
+        <div class="tt-time-disp">
+          <i class='bx bx-time-five'></i> ${formatTime12(it.from)} - ${formatTime12(it.to)}
+        </div>
+        <div class="tt-sub-name">${it.sub}</div>
+      </div>
+      <div class="tt-actions">
+        <i class='bx bx-edit-alt tt-edit-icon' onclick="editTT(${it._idx})"></i>
+        <i class='bx bx-trash tt-del-icon' onclick="deleteTT(${it._idx})"></i>
+      </div>
+    </div>
+  `,
+    )
+    .join("");
+}
+
+function editTT(i) {
+  const entry = timetable[i];
+  editingTTIndex = i;
+  document.getElementById("ttDaySelect").value = String(entry.day);
+  document.getElementById("ttSubInput").value = entry.sub;
+  const [fh, fm] = entry.from.split(":").map(Number);
+  const [th, tm] = entry.to.split(":").map(Number);
+  document.getElementById("ttFromHour").value = fh % 12 || 12;
+  document.getElementById("ttFromMin").value = fm;
+  document.getElementById("ttFromAMPM").value = fh >= 12 ? "PM" : "AM";
+  document.getElementById("ttToHour").value = th % 12 || 12;
+  document.getElementById("ttToMin").value = tm;
+  document.getElementById("ttToAMPM").value = th >= 12 ? "PM" : "AM";
+  document.getElementById("ttAddBtn").innerHTML =
+    "<i class='bx bx-save'></i> Update Class";
+}
+
+function deleteTT(i) {
+  timetable.splice(i, 1);
+  saveData();
+  renderModalTT();
+  renderTodaySchedule();
+}
+
+document
+  .getElementById("ttDaySelect")
+  .addEventListener("change", renderModalTT);
+
+// --- UTILS ---
+function openModal(id) {
+  document.getElementById(id).style.display = "flex";
+}
+function closeModal(id) {
+  document.getElementById(id).style.display = "none";
+}
+
+function saveData() {
+  localStorage.setItem("subjects", JSON.stringify(subjects));
+  localStorage.setItem("timetable", JSON.stringify(timetable));
+  localStorage.setItem("appSettings", JSON.stringify(appSettings));
+  renderSubjects();
+  updateStats();
+}
+
+function timeToMinutes(t) {
+  const [hh, mm] = (t || "").split(":").map(Number);
+  return isNaN(hh) ? 0 : hh * 60 + mm;
+}
+
+function formatTime12(t) {
+  const [hhRaw, mmRaw] = (t || "").split(":").map(Number);
+  if (isNaN(hhRaw)) return t || "";
+  const ampm = hhRaw >= 12 ? "PM" : "AM";
+  const hh = hhRaw % 12 || 12;
+  return `${hh}:${String(mmRaw).padStart(2, "0")} ${ampm}`;
+}
 
 function updateStats() {
   let tp = 0,
@@ -399,83 +438,57 @@ function updateStats() {
     tp += s.present;
     tt += s.total;
   });
-  const perc = tt > 0 ? ((tp / tt) * 100).toFixed(2) : "0.00";
-  const target = parseInt(targetSlider.value);
+  const perc = tt > 0 ? ((tp / tt) * 100).toFixed(1) : "0.0";
+  const target = parseInt(document.getElementById("targetSlider").value);
   document.getElementById("currPerc").innerText = perc + "%";
+  document.getElementById("currPerc").style.color =
+    parseFloat(perc) >= target ? "var(--success)" : "var(--danger)";
   document.getElementById("tClasses").innerText = tt;
   document.getElementById("tPresent").innerText = tp;
   document.getElementById("tAbsent").innerText = tt - tp;
-  document.getElementById("currPerc").style.color =
-    parseFloat(perc) >= target ? "var(--success)" : "var(--danger)";
-
-  // Calculate how many classes user can still miss and warning if below target
-  const leaveInfoEl = document.getElementById("leaveInfo");
-  if (leaveInfoEl) {
-    if (tt === 0) {
-      leaveInfoEl.innerText = "No classes recorded yet.";
-    } else {
-      // maximum additional missed classes x such that 100*tp/(tt + x) >= target
-      const maxMissRaw = (tp * 100) / target - tt;
-      const maxMiss = Math.max(0, Math.floor(maxMissRaw));
-
-      if (parseFloat(perc) >= target) {
-        leaveInfoEl.innerText = `You can miss up to ${maxMiss} class${
-          maxMiss === 1 ? "" : "es"
-        } and still remain at or above ${target}%`;
-      } else {
-        // compute how many consecutive attends needed to reach target
-        if (target === 100) {
-          leaveInfoEl.innerText =
-            "Target 100% is strict — you must avoid any future absence to reach it.";
-        } else {
-          const need = Math.ceil(
-            ((target / 100) * tt - tp) / (1 - target / 100)
-          );
-          const needSafe = Math.max(0, need);
-          leaveInfoEl.innerText = `Warning: below target. Attend the next ${needSafe} class${
-            needSafe === 1 ? "" : "es"
-          } to reach ${target}%`;
-        }
-      }
-    }
-  }
 }
 
-targetSlider.oninput = function () {
-  targetVal.innerText = this.value + "%";
+document.getElementById("targetSlider").oninput = function () {
+  document.getElementById("targetVal").innerText = this.value + "%";
   updateStats();
 };
 
-// scroll controls removed
+function exportData() {
+  const dataStr =
+    "data:text/json;charset=utf-8," +
+    encodeURIComponent(JSON.stringify({ subjects, timetable, appSettings }));
+  const dl = document.createElement("a");
+  dl.setAttribute("href", dataStr);
+  dl.setAttribute(
+    "download",
+    `Backup_${new Date().toISOString().slice(0, 10)}.json`,
+  );
+  document.body.appendChild(dl);
+  dl.click();
+  dl.remove();
+}
 
+function renderCalendar() {
+  const now = new Date();
+  document.getElementById("monthYear").innerText = now.toLocaleString(
+    "default",
+    { month: "long" },
+  );
+  const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  const grid = document.getElementById("calendarGrid");
+  grid.innerHTML = "";
+  for (let i = 1; i <= days; i++) {
+    const d = document.createElement("div");
+    d.className =
+      i === now.getDate() ? "calendar-day current-day" : "calendar-day";
+    d.innerText = i;
+    grid.appendChild(d);
+  }
+}
+
+// Start
 updateClock();
 renderCalendar();
 renderSubjects();
 updateStats();
 renderTodaySchedule();
-
-// Schedule a precise refresh at the next midnight and repeat daily.
-function scheduleMidnightRefresh() {
-  const now = new Date();
-  const nextMid = new Date(
-    now.getFullYear(),
-    now.getMonth(),
-    now.getDate() + 1,
-    0,
-    0,
-    0,
-    0
-  );
-  const ms = nextMid.getTime() - now.getTime();
-  setTimeout(() => {
-    _lastDateStamp = new Date().toDateString();
-    renderTodaySchedule();
-    renderCalendar();
-    renderSubjects();
-    // schedule next midnight
-    scheduleMidnightRefresh();
-  }, ms);
-}
-
-// start the midnight scheduler
-scheduleMidnightRefresh();
