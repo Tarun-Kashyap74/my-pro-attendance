@@ -8,7 +8,6 @@ const ASSETS = [
   "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap",
   "https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css",
   "https://unpkg.com/boxicons@2.1.4/fonts/boxicons.woff2",
-  "https://cdn.jsdelivr.net/npm/chart.js",
 ];
 
 self.addEventListener("install", (e) => {

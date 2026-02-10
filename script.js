@@ -21,7 +21,7 @@ applyTheme(
 let currentEditIdx = null;
 let editingTTIndex = null;
 let currentTaskSubIdx = null;
-let smartPopupData = null;
+let subjectEditIdx = null;
 let _lastDateStamp = new Date().toDateString();
 
 // --- THEME ---
@@ -99,28 +99,55 @@ function renderSubjects() {
     </div>`;
     return;
   }
+  // highlight subjects relative to currently selected target
+  const globalTarget = parseInt(
+    document.getElementById("targetSlider").value || "75",
+    10,
+  );
   list.innerHTML = subjects
     .map((s, i) => {
-      const p = s.total > 0 ? ((s.present / s.total) * 100).toFixed(1) : "0.0";
+      const p = s.total > 0 ? ((s.present / s.total) * 100).toFixed(2) : "0.00";
       const pendingTasks = s.tasks ? s.tasks.filter((t) => !t.done).length : 0;
       return `
       <div class="subject-item">
         <div class="subject-info" onclick="openTaskModal(${i})">
           <strong>${s.name} ${pendingTasks > 0 ? `<span style="font-size:0.7rem; background:var(--danger); color:white; padding:2px 6px; border-radius:10px">${pendingTasks}</span>` : ""}</strong>
           <div class="subject-stats">
-            Attendance: <span style="color:${parseFloat(p) >= 75 ? "var(--success)" : "var(--danger)"}; font-weight:bold">${p}%</span> 
+            Attendance: <span style="color:${parseFloat(p) >= globalTarget ? "var(--success)" : "var(--danger)"}; font-weight:bold">${p}%</span> 
             (${s.present}/${s.total})
           </div>
         </div>
         <div class="subject-actions">
           <button class="btn-icon btn-p" onclick="markAttendance(${i},true)"><i class='bx bx-check'></i></button>
           <button class="btn-icon btn-a" onclick="markAttendance(${i},false)"><i class='bx bx-x'></i></button>
+          <button class="btn-icon" title="Edit subject" onclick="openEditSubject(${i})"><i class='bx bx-edit-alt'></i></button>
           <button class="btn-icon btn-more" onclick="openEditAttendance(${i})"><i class='bx bx-dots-vertical-rounded'></i></button>
           <button class="btn-icon btn-more" onclick="deleteSubject(${i})" style="color:var(--danger)"><i class='bx bx-trash'></i></button>
         </div>
       </div>`;
     })
     .join("");
+}
+
+// Edit subject name (simple prompt). Updates the name and re-renders.
+function openEditSubject(idx) {
+  const current = subjects[idx];
+  if (!current) return;
+  subjectEditIdx = idx;
+  document.getElementById("editSubjectNameInput").value = current.name;
+  openModal("editSubjectModal");
+}
+
+function saveEditedSubject() {
+  const val = (
+    document.getElementById("editSubjectNameInput").value || ""
+  ).trim();
+  if (!val) return alert("Name cannot be empty.");
+  if (subjectEditIdx === null || subjectEditIdx === undefined) return;
+  subjects[subjectEditIdx].name = val;
+  subjectEditIdx = null;
+  saveData();
+  closeModal("editSubjectModal");
 }
 
 function confirmAddSubject() {
@@ -435,17 +462,62 @@ function updateStats() {
   let tp = 0,
     tt = 0;
   subjects.forEach((s) => {
-    tp += s.present;
-    tt += s.total;
+    tp += Number(s.present) || 0;
+    tt += Number(s.total) || 0;
   });
-  const perc = tt > 0 ? ((tp / tt) * 100).toFixed(1) : "0.0";
-  const target = parseInt(document.getElementById("targetSlider").value);
-  document.getElementById("currPerc").innerText = perc + "%";
-  document.getElementById("currPerc").style.color =
-    parseFloat(perc) >= target ? "var(--success)" : "var(--danger)";
+
+  const percNum = tt > 0 ? (tp / tt) * 100 : 0;
+  const perc = percNum.toFixed(2);
+  const target = parseInt(
+    document.getElementById("targetSlider").value || "75",
+    10,
+  );
+  const targetFrac = target / 100;
+
+  const percEl = document.getElementById("currPerc");
+  percEl.innerText = perc + "%";
+  percEl.style.color = percNum >= target ? "var(--success)" : "var(--danger)";
+
   document.getElementById("tClasses").innerText = tt;
   document.getElementById("tPresent").innerText = tp;
   document.getElementById("tAbsent").innerText = tt - tp;
+
+  // Calculate how many classes can still be missed while staying at/above target
+  const leaveInfoEl = document.getElementById("leaveInfo");
+  if (!leaveInfoEl) return;
+
+  if (tt === 0) {
+    leaveInfoEl.innerText = `No data yet.`;
+    return;
+  }
+
+  if (percNum >= target) {
+    // Solve for n: tp / (tt + n) >= targetFrac  => tt + n <= tp / targetFrac
+    const maxTotalAllowed = targetFrac > 0 ? tp / targetFrac : Infinity;
+    let allowedMiss = Math.floor(Math.max(0, maxTotalAllowed - tt));
+    if (!isFinite(allowedMiss)) {
+      leaveInfoEl.innerText = `Target is 0% — no restriction.`;
+    } else if (allowedMiss === 0) {
+      leaveInfoEl.innerText = `No more leaves allowed to maintain ${target}%`;
+    } else {
+      leaveInfoEl.innerText = `You can miss ${allowedMiss} more class${allowedMiss > 1 ? "es" : ""} and still keep ${target}%`;
+    }
+  } else {
+    // Need to attend some consecutive classes to reach target
+    if (target === 100) {
+      // To reach 100% you must have present == total and then attend all future classes
+      if (tp === tt) {
+        leaveInfoEl.innerText = `Attend upcoming classes without missing any to maintain 100%`;
+      } else {
+        leaveInfoEl.innerText = `Impossible to reach 100% unless you have perfect attendance from start.`;
+      }
+    } else {
+      const needed = Math.ceil(
+        Math.max(0, (targetFrac * tt - tp) / (1 - targetFrac)),
+      );
+      leaveInfoEl.innerText = `Attend next ${needed} class${needed > 1 ? "es" : ""} to reach ${target}%`;
+    }
+  }
 }
 
 document.getElementById("targetSlider").oninput = function () {
