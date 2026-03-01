@@ -564,3 +564,121 @@ renderCalendar();
 renderSubjects();
 updateStats();
 renderTodaySchedule();
+
+// --- AUTH / UMS INTEGRATION ---
+const API_BASE = "http://localhost:3000";
+let auth = {
+  accessToken: localStorage.getItem("accessToken") || null,
+  user: JSON.parse(localStorage.getItem("user") || "null"),
+};
+
+function refreshUserArea() {
+  const ua = document.getElementById("userArea");
+  if (!ua) return;
+  if (auth.user) {
+    ua.innerHTML = `<div style="display:flex; gap:10px; align-items:center"><span style="font-weight:700">${auth.user.name}</span><button class="edit-main-btn" onclick="logout()">Logout</button></div>`;
+  } else {
+    ua.innerHTML = `<button id="loginBtn" class="edit-main-btn" onclick="openLoginModal()">Login</button>`;
+  }
+}
+
+refreshUserArea();
+
+function openLoginModal() {
+  document.getElementById("loginUser").value = "";
+  document.getElementById("loginPass").value = "";
+  document.getElementById("loginRemember").checked = false;
+  openModal("loginModal");
+}
+
+async function doLogin() {
+  const u = document.getElementById("loginUser").value.trim();
+  const p = document.getElementById("loginPass").value;
+  const remember = document.getElementById("loginRemember").checked;
+  if (!u || !p) return alert("Enter username and password");
+
+  try {
+    const r = await fetch(`${API_BASE}/api/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ username: u, password: p, remember }),
+    });
+    const data = await r.json();
+    if (!r.ok) return alert(data.error || "Login failed");
+
+    auth.accessToken = data.accessToken;
+    auth.user = data.user;
+    localStorage.setItem("accessToken", auth.accessToken);
+    localStorage.setItem("user", JSON.stringify(auth.user));
+    closeModal("loginModal");
+    refreshUserArea();
+    await fetchAttendanceFromServer();
+    alert("Login successful");
+  } catch (err) {
+    console.error("Login error", err);
+    alert("Login request failed");
+  }
+}
+
+async function logout() {
+  try {
+    await fetch(`${API_BASE}/api/logout`, {
+      method: "POST",
+      credentials: "include",
+    });
+  } catch (e) {}
+  auth = { accessToken: null, user: null };
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("user");
+  refreshUserArea();
+  alert("Logged out");
+}
+
+async function fetchAttendanceFromServer() {
+  if (!auth.accessToken) return;
+  try {
+    const r = await fetch(`${API_BASE}/api/attendance`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${auth.accessToken}` },
+      credentials: "include",
+    });
+
+    // if server returned a refreshed token in header, update it
+    const newAcc = r.headers.get("x-access-token");
+    if (newAcc) {
+      auth.accessToken = newAcc;
+      localStorage.setItem("accessToken", newAcc);
+    }
+
+    const data = await r.json();
+    if (!r.ok) return console.error("Attendance error", data);
+    // populate attendance into app (best-effort mapping)
+    if (data.attendance) {
+      const a = data.attendance;
+      if (a.present !== undefined && a.total !== undefined) {
+        // set totals into the main stats
+        const present = Number(a.present) || 0;
+        const total = Number(a.total) || 0;
+        // distribute into a single synthetic subject called 'UMS'
+        const idx = subjects.findIndex((s) => s.name === "UMS");
+        if (idx === -1)
+          subjects.push({
+            name: "UMS",
+            present,
+            total,
+            history: [],
+            tasks: [],
+          });
+        else {
+          subjects[idx].present = present;
+          subjects[idx].total = total;
+        }
+        saveData();
+        updateStats();
+      }
+    }
+  } catch (err) {
+    console.error("fetchAttendance error", err);
+  }
+}

@@ -23,7 +23,18 @@
   <body>
     <header class="app-header">
       <h1 id="pageTitle">Home</h1>
-      <div id="liveClock" class="header-clock">00:00</div>
+      <div style="display: flex; gap: 12px; align-items: center">
+        <div id="liveClock" class="header-clock">00:00</div>
+        <div id="userArea">
+          <button
+            id="loginBtn"
+            class="edit-main-btn"
+            onclick="openLoginModal()"
+          >
+            Login
+          </button>
+        </div>
+      </div>
     </header>
 
     <div class="app-container">
@@ -271,6 +282,40 @@
           >
             Close
           </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="loginModal" class="modal">
+      <div class="modal-content">
+        <h3>Student Login</h3>
+        <input
+          type="text"
+          id="loginUser"
+          placeholder="UMS Username"
+          class="styled-input"
+        />
+        <input
+          type="password"
+          id="loginPass"
+          placeholder="Password"
+          class="styled-input"
+        />
+        <div
+          style="display: flex; align-items: center; gap: 10px; margin: 8px 0"
+        >
+          <input type="checkbox" id="loginRemember" />
+          <label for="loginRemember">Remember me (7 days)</label>
+        </div>
+        <div class="modal-btns">
+          <button onclick="closeModal('loginModal')" class="cancel">
+            Cancel
+          </button>
+          <button onclick="doLogin()" class="save">Login</button>
+        </div>
+        <div style="margin-top: 10px; color: var(--muted); font-size: 0.9rem">
+          Your UMS credentials are sent only to the university site via the
+          server proxy.
         </div>
       </div>
     </div>
