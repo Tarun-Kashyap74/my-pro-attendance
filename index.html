@@ -23,18 +23,7 @@
   <body>
     <header class="app-header">
       <h1 id="pageTitle">Home</h1>
-      <div style="display: flex; gap: 12px; align-items: center">
-        <div id="liveClock" class="header-clock">00:00</div>
-        <div id="userArea">
-          <button
-            id="loginBtn"
-            class="edit-main-btn"
-            onclick="openLoginModal()"
-          >
-            Login
-          </button>
-        </div>
-      </div>
+      <div id="liveClock" class="header-clock">00:00</div>
     </header>
 
     <div class="app-container">
@@ -45,34 +34,13 @@
           <p id="nextClassTime">No classes right now</p>
         </div>
 
-        <div class="section-title">
-          <h3>Today's Schedule</h3>
-          <span id="todayDay" class="subtitle-text">Checking...</span>
-        </div>
-
-        <div class="card timetable-card">
-          <div id="todaySchedule" class="schedule-list"></div>
-          <button class="edit-main-btn" onclick="openTimetableModal()">
-            <i class="bx bx-edit-alt"></i> Edit Timetable
-          </button>
-        </div>
-      </section>
-
-      <section id="tab-subjects" class="tab-content">
-        <div class="header-row">
-          <h3>My Subjects</h3>
-          <button class="add-btn" onclick="openModal('subjectModal')">
-            <i class="bx bx-plus"></i> New
-          </button>
-        </div>
-        <div class="subject-scroll-box" id="subjectList"></div>
-      </section>
-
-      <section id="tab-stats" class="tab-content">
         <div class="card tracker-card">
           <div class="slider-header">
             <span>Target Goal</span>
-            <span id="targetVal" class="highlight-text">75%</span>
+            <div style="display:flex; gap:10px; align-items:center">
+              <div id="streakBadge" class="streak-badge" style="display:none"><i class='bx bxs-flame'></i> <span id="streakVal">0</span></div>
+              <span id="targetVal" class="highlight-text">75%</span>
+            </div>
           </div>
           <input
             type="range"
@@ -95,11 +63,37 @@
           </div>
         </div>
 
-        <div class="card calendar-card" style="margin-top: 20px">
-          <div id="monthYear">Month</div>
-          <div class="calendar-grid" id="calendarGrid"></div>
+        <div class="section-title">
+          <h3>Today's Schedule</h3>
+          <span id="todayDay" class="subtitle-text">Checking...</span>
         </div>
 
+        <div class="card timetable-card">
+          <div id="todaySchedule" class="schedule-list"></div>
+          <div class="btn-group">
+            <button class="edit-main-btn" onclick="openTimetableModal()">
+              <i class="bx bx-edit-alt"></i> Edit
+            </button>
+            <button class="edit-main-btn" onclick="openModal('sickDayModal')" style="color:var(--danger); background:rgba(255, 118, 117, 0.1); border-color:rgba(255, 118, 117, 0.2)">
+              <i class='bx bx-band-aid'></i> Sick Day
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section id="tab-subjects" class="tab-content">
+        <div class="header-row">
+          <h3>My Subjects</h3>
+          <div style="display:flex; gap:8px">
+            <button class="btn-icon btn-more" id="sortBtn" onclick="toggleSort()" style="width:auto; padding:0 12px; font-size:1.2rem;">
+              <i class='bx bx-sort-down'></i>
+            </button>
+            <button class="add-btn" onclick="openModal('subjectModal')">
+              <i class="bx bx-plus"></i> New
+            </button>
+          </div>
+        </div>
+        <div class="subject-scroll-box" id="subjectList"></div>
         <button onclick="openModal('settingsModal')" class="settings-full-btn">
           <i class="bx bx-cog"></i> App Settings
         </button>
@@ -114,10 +108,6 @@
       <div class="nav-item" onclick="switchTab('subjects')">
         <i class="bx bx-book-bookmark"></i>
         <span>Subjects</span>
-      </div>
-      <div class="nav-item" onclick="switchTab('stats')">
-        <i class="bx bx-pie-chart-alt-2"></i>
-        <span>Stats</span>
       </div>
     </nav>
 
@@ -180,6 +170,20 @@
           >
           <input type="number" id="manualTotal" min="0" class="styled-input" />
         </div>
+        <button
+          onclick="openHistoryModal()"
+          class="settings-full-btn"
+          style="
+            margin-top: 15px;
+            background: var(--bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+            box-shadow: none;
+          "
+        >
+          <i class="bx bx-history"></i> View History
+        </button>
+
         <div class="modal-btns">
           <button onclick="closeModal('editAttendanceModal')" class="cancel">
             Cancel
@@ -199,6 +203,7 @@
             placeholder="New Task..."
             class="styled-input"
           />
+          <input type="date" id="newTaskDate" class="styled-input" />
           <button onclick="addNewTask()" class="icon-btn-add">
             <i class="bx bx-plus"></i>
           </button>
@@ -226,6 +231,21 @@
               type="checkbox"
               id="darkModeToggle"
               onchange="toggleDarkMode()"
+            />
+            <span class="slider round"></span>
+          </label>
+        </div>
+
+        <div class="setting-row-item">
+          <div class="setting-text">
+            <span class="setting-title">Academic Comeback</span>
+            <span class="setting-desc">Serious mode. No bunking.</span>
+          </div>
+          <label class="switch">
+            <input
+              type="checkbox"
+              id="academicModeToggle"
+              onchange="toggleAcademicMode()"
             />
             <span class="slider round"></span>
           </label>
@@ -271,8 +291,30 @@
 
         <hr class="divider" />
 
+        <span class="setting-title" style="margin-bottom:10px; display:block">Academic Tools</span>
+        <div class="modal-btns" style="margin-top:0; gap:10px">
+          <button onclick="openBunkModal()" class="settings-full-btn" style="margin-top:0; background:var(--card-bg); color:var(--text); border:1px solid var(--border); box-shadow:none; justify-content:center">
+            <i class='bx bx-calculator'></i> Can I Bunk?
+          </button>
+        </div>
+
+        <hr class="divider" />
+
         <button onclick="exportData()" class="backup-btn">
-          <i class="bx bx-cloud-download"></i> Backup Data (JSON)
+          <i class="bx bx-cloud-download"></i> Backup Data
+        </button>
+        <input
+          type="file"
+          id="importFile"
+          style="display: none"
+          onchange="importData(this)"
+        />
+        <button
+          onclick="document.getElementById('importFile').click()"
+          class="backup-btn"
+          style="margin-top: 10px; background: var(--muted)"
+        >
+          <i class="bx bx-cloud-upload"></i> Restore Data
         </button>
 
         <div class="modal-btns">
@@ -286,36 +328,17 @@
       </div>
     </div>
 
-    <div id="loginModal" class="modal">
+    <div id="historyModal" class="modal">
       <div class="modal-content">
-        <h3>Student Login</h3>
-        <input
-          type="text"
-          id="loginUser"
-          placeholder="UMS Username"
-          class="styled-input"
-        />
-        <input
-          type="password"
-          id="loginPass"
-          placeholder="Password"
-          class="styled-input"
-        />
-        <div
-          style="display: flex; align-items: center; gap: 10px; margin: 8px 0"
-        >
-          <input type="checkbox" id="loginRemember" />
-          <label for="loginRemember">Remember me (7 days)</label>
-        </div>
+        <h3>Attendance History</h3>
+        <div id="historyList" class="history-scroll"></div>
         <div class="modal-btns">
-          <button onclick="closeModal('loginModal')" class="cancel">
-            Cancel
+          <button
+            onclick="closeModal('historyModal')"
+            class="cancel full-width"
+          >
+            Close
           </button>
-          <button onclick="doLogin()" class="save">Login</button>
-        </div>
-        <div style="margin-top: 10px; color: var(--muted); font-size: 0.9rem">
-          Your UMS credentials are sent only to the university site via the
-          server proxy.
         </div>
       </div>
     </div>
@@ -334,6 +357,51 @@
           <button onclick="confirmDeleteSubject()" class="save red-btn">
             Yes, Delete
           </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="bunkModal" class="modal">
+      <div class="modal-content">
+        <h3>Can I Bunk?</h3>
+        <label class="input-label">Select Subject</label>
+        <select id="bunkSubjectSelect" class="styled-input-clean"></select>
+        
+        <div style="display:flex; gap:10px; margin-bottom:15px">
+          <select id="bunkAction" class="styled-input-clean" style="margin:0">
+            <option value="bunk">If I Bunk</option>
+            <option value="attend">If I Attend</option>
+          </select>
+          <input type="number" id="bunkCount" placeholder="Classes" class="styled-input-clean" style="margin:0">
+        </div>
+
+        <div id="bunkResult" class="calc-result"></div>
+
+        <div class="modal-btns">
+          <button onclick="closeModal('bunkModal')" class="cancel">Close</button>
+          <button onclick="calculateBunk()" class="save">Calculate</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="reminderModal" class="modal">
+      <div class="modal-content">
+        <h3>Forgot to Mark?</h3>
+        <p style="color:var(--muted); margin-bottom:20px">It looks like you had classes today but haven't marked attendance yet.</p>
+        <div class="modal-btns">
+          <button onclick="closeModal('reminderModal')" class="cancel">Later</button>
+          <button onclick="closeModal('reminderModal'); switchTab('subjects')" class="save">Mark Now</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="sickDayModal" class="modal">
+      <div class="modal-content">
+        <h3>Sick Today?</h3>
+        <p style="color:var(--muted); margin-bottom:20px">Mark all classes scheduled for today as <b>Absent</b>?</p>
+        <div class="modal-btns">
+          <button onclick="closeModal('sickDayModal')" class="cancel">Cancel</button>
+          <button onclick="confirmSickDay()" class="save red-btn">Confirm</button>
         </div>
       </div>
     </div>
